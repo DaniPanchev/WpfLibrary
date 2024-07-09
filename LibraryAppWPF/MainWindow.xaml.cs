@@ -12,19 +12,62 @@ using Library;
 using System;
 using System.Collections.Generic;
 using System.Windows;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using Newtonsoft.Json;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Windows;
 
 namespace LibraryAppWPF
 {
     public partial class MainWindow : Window
     {
-        private library library;
+        private Library library;
+        private const string FilePath = "save.txt";
 
         public MainWindow()
         {
             InitializeComponent();
-            library = new library();
+            library = new Library();
+            Application.Current.Exit += OnApplicationExit;
         }
-
+        private void OnApplicationExit(object sender, ExitEventArgs e)
+        {
+            SaveBooksToFile();
+        }
+        private void OnSaveClicked(object sender, RoutedEventArgs e)
+        {
+            SaveBooksToFile();
+            MessageBox.Show("Books saved successfully.", "Save", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        private void OnLoadClicked(object sender, RoutedEventArgs e)
+        {
+            LoadBooksFromFile();
+            MessageBox.Show("Books loaded successfully.", "Load", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        private void SaveBooksToFile()
+        {
+            List<Book> allBooks = library.GetAllBooks();
+            string jsonString = JsonConvert.SerializeObject(allBooks, Formatting.Indented);
+            File.WriteAllText(FilePath, jsonString);
+        }
+        private void LoadBooksFromFile()
+        {
+            if (File.Exists(FilePath))
+            {
+                string jsonString = File.ReadAllText(FilePath);
+                List<Book> allBooks = JsonConvert.DeserializeObject<List<Book>>(jsonString);
+                library.LoadBooks(allBooks);
+                BooksListBox.ItemsSource = library.GetAllBooks();
+            }
+            else
+            {
+                MessageBox.Show("No saved books found.", "Load", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
         private void OnAddBookClicked(object sender, RoutedEventArgs e)
         {
             var title = PromptDialog("Add Book", "Enter the book title:");
@@ -39,6 +82,7 @@ namespace LibraryAppWPF
                 Book book = new Book(title, author, price);
                 library.AddBook(book);
                 MessageBox.Show("Book added successfully.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                BooksListBox.ItemsSource = library.GetAllBooks(); // Update the ListBox
             }
             else
             {
@@ -53,11 +97,11 @@ namespace LibraryAppWPF
 
             if (book != null)
             {
-                MessageBox.Show($"Found book: {book}", "Book Found", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageTextBlock.Text = $"Found book: {book}";
             }
             else
             {
-                MessageBox.Show("Book not found.", "Not Found", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageTextBlock.Text = "Book not found.";
             }
         }
 
@@ -69,6 +113,7 @@ namespace LibraryAppWPF
             if (isRemoved)
             {
                 MessageBox.Show("Book removed successfully.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                BooksListBox.ItemsSource = library.GetAllBooks(); // Update the ListBox
             }
             else
             {
@@ -98,6 +143,7 @@ namespace LibraryAppWPF
 
         private void OnExitClicked(object sender, RoutedEventArgs e)
         {
+            SaveBooksToFile();
             Application.Current.Shutdown();
         }
 
@@ -109,6 +155,90 @@ namespace LibraryAppWPF
                 return dialog.ResponseText;
             }
             return string.Empty;
+        }
+    }
+
+    public class Library
+    {
+        private List<Book> books;
+
+        public Library()
+        {
+            books = new List<Book>();
+        }
+
+        public void AddBook(Book book)
+        {
+            books.Add(book);
+        }
+
+        public Book SearchBookByTitle(string title)
+        {
+            return books.Find(book => book.Title.Equals(title, StringComparison.OrdinalIgnoreCase));
+        }
+
+        public bool RemoveBook(string title)
+        {
+            var book = SearchBookByTitle(title);
+            if (book != null)
+            {
+                books.Remove(book);
+                return true;
+            }
+            return false;
+        }
+
+        public List<Book> GetAllBooks()
+        {
+            return new List<Book>(books);
+        }
+
+        public bool ContainsTitle(string word)
+        {
+            return books.Exists(book => book.Title.Contains(word, StringComparison.OrdinalIgnoreCase));
+        }
+
+        public void LoadBooks(List<Book> loadedBooks)
+        {
+            books = loadedBooks ?? new List<Book>();
+        }
+    }
+
+    public class Author
+    {
+        public string FullName { get; set; }
+        public string Email { get; set; }
+        public char Gender { get; set; }
+
+        public Author(string fullName, string email, char gender)
+        {
+            FullName = fullName;
+            Email = email;
+            Gender = gender;
+        }
+
+        public override string ToString()
+        {
+            return $"Author[name={FullName}, email={Email}, gender={Gender}]";
+        }
+    }
+
+    public class Book
+    {
+        public string Title { get; set; }
+        public Author Author { get; set; }
+        public double Price { get; set; }
+
+        public Book(string title, Author author, double price)
+        {
+            Title = title;
+            Author = author;
+            Price = price;
+        }
+
+        public override string ToString()
+        {
+            return $"Book[title={Title}, {Author}, price={Price}]";
         }
     }
 }

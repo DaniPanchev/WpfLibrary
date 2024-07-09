@@ -1,8 +1,10 @@
 {
   "version": 2,
-  "dgSpecHash": "aS8swmNBsQM=",
+  "dgSpecHash": "6RrFFz9gLKY=",
   "success": true,
   "projectFilePath": "C:\\Users\\Dany\\source\\repos\\LibraryAppWPF\\LibraryWPF.csproj",
-  "expectedPackageFiles": [],
+  "expectedPackageFiles": [
+    "C:\\Users\\Dany\\.nuget\\packages\\newtonsoft.json\\13.0.3\\newtonsoft.json.13.0.3.nupkg.sha512"
+  ],
   "logs": []
 }
